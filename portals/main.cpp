@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cmath>
 
+class Portal;
+
 
 class Static_Body{
 public:
@@ -119,6 +121,9 @@ public:
         return false;
     }
 
+    void collision_portal(Portal&, Portal&);
+ 
+
     void teleport_to(sf::Vector2f destination) // add direction change for vel & accel
     {
         pos = destination;
@@ -134,6 +139,8 @@ public:
     float width;
 
     sf::RectangleShape shape;
+
+    float offset;
 
     void draw(sf::RenderWindow& window)
     {
@@ -153,10 +160,12 @@ public:
 
         sf::Vector2f player_center = {player.pos.x + (player.shape.getSize().x / 2.f), player.pos.y + (player.shape.getSize().y / 2.f)};
 
-        float offset = width/4.f;
+        offset = width/4.f;
 
 
-        switch (shootdirection)
+        direction = shootdirection;
+
+        switch (direction)
         {
             case 0: // = left
                 shape.setSize({width, height});
@@ -289,6 +298,88 @@ public:
 
 };
 
+
+    // definition of this funtion after definition of Portal class
+void Player::collision_portal(Portal& portal1, Portal& portal2)
+{
+    float Awidth = shape.getSize().x;
+    float Aheight = shape.getSize().y;
+
+
+    sf::Vector2f Bpos = {portal1.pos.x, portal1.pos.y};
+    float Bwidth = portal1.shape.getSize().x;
+    float Bheight = portal1.shape.getSize().y;
+
+    sf::Vector2f Cpos = {portal2.pos.x, portal2.pos.y};
+    float Cwidth = portal2.shape.getSize().x;
+    float Cheight = portal2.shape.getSize().y;
+
+    if ((pos.x + Awidth) >= Bpos.x && pos.x <= (Bpos.x + Bwidth) && (pos.y + Aheight) >= Bpos.y && pos.y <= (Bpos.y + Bheight))
+    {
+
+        float offset;
+
+        if (portal1.direction == 0 || portal1.direction == 1)
+            offset = pos.y - Bpos.y;
+        if (portal1.direction == 2 || portal1.direction == 3)
+            offset = pos.x - Bpos.x;
+
+        // collision with portal1
+        switch(portal2.direction) // 0 = left, 1 = right, 2 = up, 3 = down
+        {
+            case 0:
+                pos = {portal2.pos.x + portal2.shape.getSize().x + 3.f, portal2.pos.y + offset};
+                vel.x = 75.f;
+                break;
+            case 1:
+                pos = {portal2.pos.x - portal2.shape.getSize().x - 3.f, portal2.pos.y + offset};
+                vel.x = -75.f;
+                break;
+            case 2:
+                pos = {portal2.pos.x + offset, portal2.pos.y + portal2.shape.getSize().y + 3.f};
+                break;
+            case 3:
+                pos = {portal2.pos.x + offset, portal2.pos.y - portal2.shape.getSize().y - 3.f};
+                vel.y = -300;
+                break;
+            
+
+
+        }
+    }
+    if ((pos.x + Awidth) >= Cpos.x && pos.x <= (Cpos.x + Cwidth) && (pos.y + Aheight) >= Cpos.y && pos.y <= (Cpos.y + Cheight))
+    {
+
+        float offset;
+
+        if (portal1.direction == 0 || portal1.direction == 1)
+            offset = pos.y - Cpos.y;
+        if (portal1.direction == 2 || portal1.direction == 3)
+            offset = pos.x - Cpos.x;
+
+        // collision with portal2
+        switch(portal1.direction) // 0 = left, 1 = right, 2 = up, 3 = down
+        {
+            case 0:
+                pos = {portal1.pos.x + portal1.shape.getSize().x + 3.f, portal1.pos.y + offset};
+                vel.x = 75.f;
+                break;
+            case 1:
+                pos = {portal1.pos.x - portal1.shape.getSize().x - 3.f, portal1.pos.y + offset};
+                vel.x = -75.f;
+                break;
+            case 2:
+                pos = {portal1.pos.x + offset, portal1.pos.y + portal1.shape.getSize().y + 3.f};
+                break;
+            case 3:
+                pos = {portal1.pos.x + offset, portal1.pos.y - portal1.shape.getSize().y - 3.f};
+                vel.y = -300;
+                break;
+
+        }
+    }
+}
+
 int main()
 {
 
@@ -297,7 +388,7 @@ int main()
     
     // window
     sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(width), static_cast<unsigned int>(height)}), "portals", sf::State::Fullscreen);
-    //window.setFramerateLimit(120);
+    window.setFramerateLimit(120);
     
 
     window.setKeyRepeatEnabled(false);
@@ -362,6 +453,8 @@ int main()
     portal2.shape.setSize({portal2.width, portal2.height});
 
     unsigned int which_portal = 1;
+
+    bool portals_active = false;
 
 
 
@@ -636,7 +729,7 @@ int main()
         player.update(dt);
 
        
-
+        player.collision_portal(portal1, portal2);
         player.collision(ground);
         player.collision(ceiling);
         player.collision(leftwall);
